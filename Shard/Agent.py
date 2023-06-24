@@ -50,8 +50,8 @@ class Agent:
         model = tf.keras.Sequential([
             tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(3, 3, 1)),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(64, activation='relu'),
-            # tf.keras.layers.Dense(64, activation='relu'),
+            tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+            tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
             tf.keras.layers.Dense(9, activation='softmax')
         ])
 
@@ -134,7 +134,7 @@ class Agent:
             WP = data["wp"]
             data = {"ALLAICOUP": 0, "ALGOAICOUP": 0, "win": [1, 1], "wp": WP}
             save_data(data)
-            self.add_new_layer()
+            #self.add_new_layer()
 
         if train == 70:
             model = tf.keras.models.load_model('data/morpion_model')
@@ -146,7 +146,6 @@ class Agent:
             self.model = model
             print(f"{Fore.GREEN}Le modèle a été mis à jour avec de nouvelles données.{Style.RESET_ALL}")
             train = 0
-            reset()
             return
         train = train + 1
 
@@ -156,7 +155,7 @@ class Agent:
         prediction = self.model.predict(newetat)
         prediction = prediction[0]
         prediction = [x if x != -1 else float('-inf') for x in prediction]
-        action = self.epsilon_greedy_action(prediction, 0.1)
+        action = self.epsilon_greedy_action(prediction, 0)
 
         target = [0] * 9
         for recommend, level in correct:
@@ -176,11 +175,11 @@ class Agent:
 
     def determine_reward(self, result):
         if result == 3:
-            return 1.0  # victoire
+            return 3.0  # victoire
         elif result == 2:
-            return 0.5 #strate
+            return 2.0 #strate
         elif result == 1:
-            return 0.1  # tactic
+            return 1  # tactic
         else:
             return 0.0  # default
 
