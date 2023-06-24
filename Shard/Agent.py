@@ -50,8 +50,8 @@ class Agent:
         model = tf.keras.Sequential([
             tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(3, 3, 1)),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
-            tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+            tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+            tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
             tf.keras.layers.Dense(9, activation='softmax')
         ])
 
@@ -106,7 +106,7 @@ class Agent:
 
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-        model.fit(X_, y_, sample_weight=reward, epochs=10, batch_size=32)
+        model.fit(X_, y_, epochs=10, batch_size=32) #, sample_weight=reward
 
         self.model = model
         model.save('data/morpion_model')
@@ -141,11 +141,12 @@ class Agent:
             X_new = np.array(X_train)
             y_new = np.array(self.convert_results_to_labels(recommended_action))
             reward = np.array(rewards)
-            model.fit(X_new, y_new, sample_weight=reward, epochs=12, batch_size=32)
+            model.fit(X_new, y_new, epochs=12, batch_size=32) #sample_weight=reward
             model.save('data/morpion_model')
             self.model = model
             print(f"{Fore.GREEN}Le modèle a été mis à jour avec de nouvelles données.{Style.RESET_ALL}")
             train = 0
+            reset()
             return
         train = train + 1
 
@@ -170,16 +171,16 @@ class Agent:
                     target.append((i, -1))
             X_train.append(etat_jeu)
             recommended_action.append(target)
-            rewards.append(1.0)
+            #rewards.append(1.0)
         return action
 
     def determine_reward(self, result):
         if result == 3:
-            return 3.0  # victoire
+            return 1.0  # victoire
         elif result == 2:
-            return 2.0 #strate
+            return 0.5 #strate
         elif result == 1:
-            return 1  # tactic
+            return 0.25  # tactic
         else:
             return 0.0  # default
 
@@ -203,7 +204,7 @@ class Agent:
                     break
                 elif determine > result:
                     result = determine
-        rewards.append(result)
+        #rewards.append(result)
 
         self.save_data()
 
