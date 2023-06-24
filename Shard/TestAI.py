@@ -223,6 +223,7 @@ while True:
             AICOUP = 0
             DLCOUP = 0
             total = WIN[0] + WIN[1]
+            WIN[1] = WIN[1] + 1
             save_data({
                 "ALLAICOUP": SAICOUP,
                 "ALGOAICOUP": SDLCOUP,

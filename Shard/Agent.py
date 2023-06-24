@@ -75,7 +75,7 @@ class Agent:
 
     def __init__(self):
         super(Agent, self).__init__()
-        global X_train, recommended_action
+        global X_train, recommended_action, train
         self.load_data()
         if not os.path.exists('data/morpion_model'):
             print("no exists")
@@ -84,6 +84,8 @@ class Agent:
         self.model = tf.keras.models.load_model('data/morpion_model')
 
         print(self.model.summary())
+        data = load_data()
+        train = data["win"][1]
 
     def add_new_layer(self):
         model = tf.keras.models.load_model('data/morpion_model')
@@ -129,10 +131,11 @@ class Agent:
 
     def train(self):
         global train
+        print(len(X_train))
+        print(train)
+        self.save_data()
         data = load_data()
-        WIN = data["win"]
-        print(WIN[1])
-        if WIN[1] >= 1000:
+        if train >= 500:
             WP = data["wp"]
             data = {"ALLAICOUP": 0, "ALGOAICOUP": 0, "win": [1, 1], "wp": WP}
             save_data(data)
@@ -144,8 +147,10 @@ class Agent:
             model.save('data/morpion_model')
             self.model = model
             print(f"{Fore.GREEN}Le modèle a été mis à jour avec de nouvelles données.{Style.RESET_ALL}")
-            #reset()
+            reset()
+            train = 0
             return
+        train = train+1
 
     def prediction(self, etat_jeu):
         correct = self.check(etat_jeu)
@@ -188,8 +193,6 @@ class Agent:
                 elif determine > result:
                     result = determine
         #rewards.append(result)
-
-        self.save_data()
 
     def play(self, etat_jeu):
         action_AI = self.prediction(etat_jeu)
