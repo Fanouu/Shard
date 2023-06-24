@@ -304,10 +304,10 @@ def XYToPosition(ligne, colonne):
 
 
 def reset():
-    global X_train, y_train, recommended_action
+    global X_train, y_train, recommended_action, rewards
     X_train = []
     recommended_action = []
-
+    rewards = []
 
 agent = Agent()
 etat_jeu = np.array([[0, 0, 0],
