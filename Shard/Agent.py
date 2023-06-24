@@ -50,8 +50,8 @@ class Agent:
         model = tf.keras.Sequential([
             tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(3, 3, 1)),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
-            tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+            tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
+            tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),
             tf.keras.layers.Dense(9, activation='softmax')
         ])
 
@@ -60,13 +60,14 @@ class Agent:
             y_ = np.random.randint(0, 2, (2, 9))
             reward = np.array([0, 0])
         else:
+            print("DATA FOUND")
             X_ = np.array(X_train)
             y_ = np.array(self.convert_results_to_labels(recommended_action))
             reward = np.array(rewards)
 
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-        model.fit(X_, y_, sample_weight=reward, epochs=10, batch_size=32)
+        model.fit(X_, y_, sample_weight=reward, epochs=12, batch_size=32)
 
         model.save('data/morpion_model')
 
@@ -75,7 +76,7 @@ class Agent:
     def __init__(self):
         super(Agent, self).__init__()
         global X_train, recommended_action
-        # self.load_data()
+        self.load_data()
         if not os.path.exists('data/morpion_model'):
             print("no exists")
             self.generateModele()
@@ -100,13 +101,14 @@ class Agent:
             y_ = np.random.randint(0, 2, (2, 9))
             reward = np.array([0, 0])
         else:
+            print("DATA FOUND")
             X_ = np.array(X_train)
             y_ = np.array(self.convert_results_to_labels(recommended_action))
             reward = np.array(rewards)
 
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-        model.fit(X_, y_, epochs=10, batch_size=32) #, sample_weight=reward
+        model.fit(X_, y_, epochs=12, batch_size=32) #, sample_weight=reward
 
         self.model = model
         model.save('data/morpion_model')
@@ -130,25 +132,20 @@ class Agent:
         data = load_data()
         WIN = data["win"]
         print(WIN[1])
-        if WIN[1] == 3000:
+        if WIN[1] >= 1000:
             WP = data["wp"]
             data = {"ALLAICOUP": 0, "ALGOAICOUP": 0, "win": [1, 1], "wp": WP}
             save_data(data)
-            #self.add_new_layer()
 
-        if train == 70:
-            model = tf.keras.models.load_model('data/morpion_model')
+            model = self.generateModele()
             X_new = np.array(X_train)
             y_new = np.array(self.convert_results_to_labels(recommended_action))
-            reward = np.array(rewards)
-            model.fit(X_new, y_new, epochs=12, batch_size=32) #sample_weight=reward
+            #model.fit(X_new, y_new, epochs=12, batch_size=32) #sample_weight=reward
             model.save('data/morpion_model')
             self.model = model
             print(f"{Fore.GREEN}Le modèle a été mis à jour avec de nouvelles données.{Style.RESET_ALL}")
-            train = 0
-            reset()
+            #reset()
             return
-        train = train + 1
 
     def prediction(self, etat_jeu):
         correct = self.check(etat_jeu)
@@ -156,22 +153,8 @@ class Agent:
         prediction = self.model.predict(newetat)
         prediction = prediction[0]
         prediction = [x if x != -1 else float('-inf') for x in prediction]
-        action = self.epsilon_greedy_action(prediction, 0)
+        action = self.epsilon_greedy_action(prediction, 0.1)
 
-        target = [0] * 9
-        for recommend, level in correct:
-            target[recommend] = level
-        ag = np.argmax(target)
-        if ag != action and target[ag] == 3:
-            target = []
-            for i in range(9):
-                if i == ag:
-                    target.append((i, 3))
-                else:
-                    target.append((i, -1))
-            X_train.append(etat_jeu)
-            recommended_action.append(target)
-            #rewards.append(1.0)
         return action
 
     def determine_reward(self, result):
@@ -221,6 +204,7 @@ class Agent:
         expected = []
         i = 0
         victory = False
+        nodefeat = 0
         for ligne, v in enumerate(oldetat_jeu):
             for colonne, value in enumerate(v):
                 if value == 1 or value == 2:
@@ -232,13 +216,33 @@ class Agent:
                             expected.append((i, 3))
                             victory = True
                     elif possible_win == 2:
+                        nodefeat = nodefeat + 0
                         if not victory:
                             expected.append((i, 2))
-
                     else:
-                        expected.append((i, 1))
+                        if not victory:
+                            expected.append((i, 1))
+                        else:
+                            expected.append((i, 0.5))
 
                 i = i + 1
+
+        if victory:
+            new_expected = []
+            for reco in expected:
+                case, lvl = reco
+                if lvl == 3:
+                    new_expected.append((case, 3))
+                    expected = new_expected
+                    break
+        elif nodefeat == 1:
+            new_expected = []
+            for reco in expected:
+                case, lvl = reco
+                if lvl == 3:
+                    new_expected.append((case, 3))
+                    expected = new_expected
+                    break
 
         return expected
 
