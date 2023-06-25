@@ -7,16 +7,7 @@ from colorama import Fore, Style
 
 import numpy as np
 import tensorflow as tf
-import logging
 from json import JSONEncoder
-
-
-class NumpyArrayEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return JSONEncoder.default(self, obj)
-
 
 def save_data(data):
     with open('data/game.json', 'w') as file:
@@ -29,7 +20,9 @@ def load_data():
             "ALLAICOUP": 0,
             "ALGOAICOUP": 0,
             "win": [1, 1],
-            "wp": 0
+            "wp": 0,
+            "train": 0,
+            "ltrain": 0
         })
 
     with open('data/game.json', 'r') as file:
@@ -37,11 +30,10 @@ def load_data():
 
 
 X_train = []  # Liste pour stocker les états du jeu
-y_train = []  # Liste pour stocker les actions associées
-results = []
 recommended_action = []
-train = 0
-newlayer = 0
+loaded_data = load_data()
+train = loaded_data["train"]
+ltrain = loaded_data["ltrain"]
 rewards = []
 
 class Agent:
@@ -130,26 +122,24 @@ class Agent:
             pickle.dump(data, f)
 
     def train(self):
-        global train
-        print(len(X_train))
+        global train, ltrain
+        print("Lenght:", len(X_train))
         print(train)
         self.save_data()
-        data = load_data()
-        if train >= 500:
-            WP = data["wp"]
-            data = {"ALLAICOUP": 0, "ALGOAICOUP": 0, "win": [1, 1], "wp": WP}
-            save_data(data)
+        if train >= 100:
+            model = tf.keras.models.load_model('data/morpion_model')
 
-            model = self.generateModele()
             X_new = np.array(X_train)
             y_new = np.array(self.convert_results_to_labels(recommended_action))
-            #model.fit(X_new, y_new, epochs=12, batch_size=32) #sample_weight=reward
+            model.fit(X_new, y_new, epochs=12, batch_size=32) #sample_weight=reward
             model.save('data/morpion_model')
+
             self.model = model
             print(f"{Fore.GREEN}Le modèle a été mis à jour avec de nouvelles données.{Style.RESET_ALL}")
             reset()
             train = 0
             return
+        #ltrain = ltrain+1
         train = train+1
 
     def prediction(self, etat_jeu):

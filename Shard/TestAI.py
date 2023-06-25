@@ -1,6 +1,7 @@
 import json
 import os
 
+import numpy as np
 import pygame
 import sys
 import random
@@ -36,7 +37,9 @@ def load_data():
             "ALLAICOUP": 0,
             "ALGOAICOUP": 0,
             "win": [1, 1],
-            "wp": 0
+            "wp": 0,
+            "train": 0,
+            "ltrain": 0
         })
 
     with open('data/game.json', 'r') as file:
@@ -145,7 +148,7 @@ def rectifieAI():
 
 
 def choisir_coup_IA2():
-    #if random.randint(0, 1) == 1:
+    if np.random.uniform(0, 1) > 0.1:
         for ligne in range(3):
             for colonne in range(3):
                 if grille[ligne][colonne] is None:
@@ -171,14 +174,14 @@ def choisir_coup_IA2():
                     coups_possibles.append((ligne, colonne))
 
         return random.choice(coups_possibles)
-    #else:
-    #    coups_possibles = []
-    #    for ligne in range(3):
-    #       for colonne in range(3):
-    #            if grille[ligne][colonne] is None:
-    #                coups_possibles.append((ligne, colonne))
-    #
-    #    return random.choice(coups_possibles)
+    else:
+        coups_possibles = []
+        for ligne in range(3):
+          for colonne in range(3):
+                if grille[ligne][colonne] is None:
+                    coups_possibles.append((ligne, colonne))
+
+        return random.choice(coups_possibles)
 
 
 while True:
@@ -205,7 +208,9 @@ while True:
                 "ALLAICOUP": SAICOUP,
                 "ALGOAICOUP": SDLCOUP,
                 "win": WIN,
-                "wp": WP
+                "wp": WP,
+                "train": Agent.train,
+                "ltrain": Agent.ltrain
             })
             print("{YELLOW} Elle a aussi gagner {LIGHTGREEN_EX} {WIN}{YELLOW} partie(s) sur {LIGHTRED_EX}{total}{YELLOW}({CYAN}{PERCENT}{YELLOW}%) \nEt sur toute c'est partie {CYAN}{PERCENT2}% {YELLOW}sont mis par l'IA{RESET_ALL}".format(LIGHTGREEN_EX=Fore.LIGHTGREEN_EX, PERCENT2=(SAICOUP / SDLCOUP) * 100, PERCENT=(WIN[0] / total) * 100, total=WIN[1], WIN=WIN[0], AICOUP=AICOUP, DLCOUP=DLCOUP, CYAN=Fore.CYAN, YELLOW=Fore.YELLOW, LIGHTRED_EX=Fore.LIGHTRED_EX, GREEN=Fore.GREEN, RESET_ALL=Style.RESET_ALL))
 
@@ -228,7 +233,9 @@ while True:
                 "ALLAICOUP": SAICOUP,
                 "ALGOAICOUP": SDLCOUP,
                 "win": WIN,
-                "wp": WP
+                "wp": WP,
+                "train": Agent.train,
+                "ltrain": Agent.ltrain
             })
             print("{YELLOW} Elle a aussi gagner {LIGHTGREEN_EX} {WIN}{YELLOW} partie(s) sur {LIGHTRED_EX}{total}{YELLOW}({CYAN}{PERCENT}{YELLOW}%) \nEt sur toute c'est partie {CYAN}{PERCENT2}% {YELLOW}sont mis par l'IA{RESET_ALL}".format(LIGHTGREEN_EX=Fore.LIGHTGREEN_EX, PERCENT2=(SAICOUP / SDLCOUP) * 100, PERCENT=(WIN[0] / total) * 100, total=WIN[1], WIN=WIN[0], AICOUP=AICOUP, DLCOUP=DLCOUP, CYAN=Fore.CYAN, YELLOW=Fore.YELLOW, LIGHTRED_EX=Fore.LIGHTRED_EX, GREEN=Fore.GREEN, RESET_ALL=Style.RESET_ALL))
 
@@ -271,7 +278,9 @@ while True:
                     "ALLAICOUP": SAICOUP,
                     "ALGOAICOUP": SDLCOUP,
                     "win": WIN,
-                    "wp": WP
+                    "wp": WP,
+                    "train": Agent.train,
+                    "ltrain": Agent.ltrain
                 })
                 print("{YELLOW} Elle a aussi gagner {LIGHTGREEN_EX} {WIN}{YELLOW} partie(s) sur {LIGHTRED_EX}{total}{YELLOW}({CYAN}{PERCENT}{YELLOW}%) \nEt sur toute c'est partie {CYAN}{PERCENT2}% {YELLOW}sont mis par l'IA{RESET_ALL}".format(LIGHTGREEN_EX=Fore.LIGHTGREEN_EX, PERCENT2=(SAICOUP / SDLCOUP) * 100, PERCENT=(WIN[0] / total) * 100, total=WIN[1], WIN=WIN[0], AICOUP=AICOUP, DLCOUP=DLCOUP, CYAN=Fore.CYAN, YELLOW=Fore.YELLOW, LIGHTRED_EX=Fore.LIGHTRED_EX, GREEN=Fore.GREEN, RESET_ALL=Style.RESET_ALL))
 
