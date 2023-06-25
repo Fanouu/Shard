@@ -12,6 +12,7 @@ Y_train = []
 CAT_PATH = 'resources/cat'
 DOG_PATH = 'resources/dog'
 
+
 class Agent:
 
     def generateDog(self):
@@ -19,6 +20,7 @@ class Agent:
         while i < 10:
             dog.getDog(directory='resources/dog', filename='dog{i}'.format(i=i))
             i = i + 1
+
     def generateCat(self):
         url = "https://cataas.com/cat"
         i = 0
@@ -77,10 +79,11 @@ class Agent:
         if not os.path.exists(CAT_PATH):
             os.mkdir(CAT_PATH)
             self.generateCat()
+            self.generateModel()
 
         model = tf.keras.models.load_model('data/model')
 
-        new_image_path = DOG_PATH+"/dog0.jpg"
+        new_image_path = CAT_PATH + "/cat4.jpg" #IMAGE QUE TU VEUT TEST
         new_image = tf.keras.preprocessing.image.load_img(new_image_path, target_size=(128, 128))
 
         new_image_array = tf.keras.preprocessing.image.img_to_array(new_image)
