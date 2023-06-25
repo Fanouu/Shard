@@ -2,7 +2,9 @@ import json
 import os.path
 import os
 import pickle
+import random
 import sys
+
 from colorama import Fore, Style
 
 import numpy as np
@@ -61,7 +63,7 @@ class Agent:
 
         model.fit(X_, y_, sample_weight=reward, epochs=12, batch_size=32)
 
-        model.save('data/morpion_model')
+        model.save('data/morpion_model_old')
 
         return model
 
@@ -69,18 +71,18 @@ class Agent:
         super(Agent, self).__init__()
         global X_train, recommended_action, train
         self.load_data()
-        if not os.path.exists('data/morpion_model'):
+        if not os.path.exists('data/morpion_model_old'):
             print("no exists")
             self.generateModele()
 
-        self.model = tf.keras.models.load_model('data/morpion_model')
+        self.model = tf.keras.models.load_model('data/morpion_model_old')
 
         print(self.model.summary())
         data = load_data()
         train = data["win"][1]
 
     def add_new_layer(self):
-        model = tf.keras.models.load_model('data/morpion_model')
+        model = tf.keras.models.load_model('data/morpion_model_old')
 
         model.layers[-2].trainable = False
         name = "dense_{n}".format(n=len(model.layers))
@@ -105,7 +107,7 @@ class Agent:
         model.fit(X_, y_, epochs=12, batch_size=32) #, sample_weight=reward
 
         self.model = model
-        model.save('data/morpion_model')
+        model.save('data/morpion_model_old')
         print(f"{Fore.RED}NOUVELLE LAYER DENSE !{Style.RESET_ALL}")
 
     def load_data(self):
@@ -127,12 +129,11 @@ class Agent:
         print(train)
         self.save_data()
         if train >= 100:
-            model = tf.keras.models.load_model('data/morpion_model')
-
+            model = tf.keras.models.load_model('data/morpion_model_old')
             X_new = np.array(X_train)
             y_new = np.array(self.convert_results_to_labels(recommended_action))
             model.fit(X_new, y_new, epochs=12, batch_size=32) #sample_weight=reward
-            model.save('data/morpion_model')
+            model.save('data/morpion_model_old')
 
             self.model = model
             print(f"{Fore.GREEN}Le modèle a été mis à jour avec de nouvelles données.{Style.RESET_ALL}")
@@ -147,10 +148,41 @@ class Agent:
         newetat = np.expand_dims(etat_jeu, axis=0)
         prediction = self.model.predict(newetat)
         prediction = prediction[0]
-        prediction = [x if x != -1 else float('-inf') for x in prediction]
-        action = self.epsilon_greedy_action(prediction, 0.1)
+        #prediction = [x if x != -1 else float('-inf') for x in prediction]
+        print(prediction)
+        action = self.epsilon_greedy_action(prediction, 0)
 
+        X_train.append(etat_jeu)
+        check = self.check(etat_jeu)
+
+        victory = []
+        strate = []
+        valide = []
+        for recommend, level in check:
+            if level == 1.0:
+                victory.append(recommend)
+            elif level == 0.5:
+                strate.append(recommend)
+            elif level == 0.25:
+                valide.append(recommend)
+
+        target = []
+        if len(victory) > 0:
+            recoac = random.choice(victory)
+            target.append((recoac, 1.0))
+        elif len(strate) > 0:
+            recoac = random.choice(strate)
+            target.append((recoac, 1.0))
+        elif len(valide) > 0:
+            recoac = random.choice(valide)
+            target.append((recoac, 1.0))
+
+        recommended_action.append(target)
         return action
+
+    def add_data(self, etat_jeu, target):
+        X_train.append(etat_jeu)
+        recommended_action.append(target)
 
     def determine_reward(self, result):
         if result == 3:
@@ -163,26 +195,10 @@ class Agent:
             return 0.0  # default
 
     def epsilon_greedy_action(self, prediction, epsilon):
-        if np.random.uniform(0, 1) < epsilon:
-            return np.random.randint(len(prediction))
-        else:
+        #if np.random.uniform(0, 1) < epsilon:
+        #    return np.random.randint(len(prediction))
+        #else:
             return np.argmax(prediction)
-
-    def save(self, etat_jeu, oldetat_jeux):
-        X_train.append(etat_jeu)
-        check = self.check(oldetat_jeux)
-        recommended_action.append(check)  # ATTENTION SI ALGO CHELOU REMETTRE OLD
-
-        result = 0.0
-        for etat in self.convert_results_to_labels([check]):
-            for i in etat:
-                determine = self.determine_reward(i)
-                if determine == 1.0:
-                    result = 1.0
-                    break
-                elif determine > result:
-                    result = determine
-        #rewards.append(result)
 
     def play(self, etat_jeu):
         action_AI = self.prediction(etat_jeu)
@@ -201,41 +217,45 @@ class Agent:
         for ligne, v in enumerate(oldetat_jeu):
             for colonne, value in enumerate(v):
                 if value == 1 or value == 2:
-                    expected.append((i, -1))
+                    expected.append((i, 0))
                 else:
                     possible_win = self.possible_win(oldetat_jeu, i)
                     if possible_win == 1:
                         if not victory:
-                            expected.append((i, 3))
+                            expected.append((i, 1.0))
                             victory = True
+                        else:
+                            expected.append((i, 1.0))
                     elif possible_win == 2:
                         nodefeat = nodefeat + 0
                         if not victory:
-                            expected.append((i, 2))
-                    else:
-                        if not victory:
-                            expected.append((i, 1))
+                            expected.append((i, 0.5))
                         else:
                             expected.append((i, 0.5))
+                    else:
+                        if not victory:
+                            expected.append((i, 0.25))
+                        else:
+                            expected.append((i, 0.25))
 
                 i = i + 1
 
-        if victory:
-            new_expected = []
-            for reco in expected:
-                case, lvl = reco
-                if lvl == 3:
-                    new_expected.append((case, 3))
-                    expected = new_expected
-                    break
-        elif nodefeat == 1:
-            new_expected = []
-            for reco in expected:
-                case, lvl = reco
-                if lvl == 3:
-                    new_expected.append((case, 3))
-                    expected = new_expected
-                    break
+        #if victory:
+        #    new_expected = []
+        #    for reco in expected:
+        #        case, lvl = reco
+        #        if lvl == 3:
+        #            new_expected.append((case, 3))
+        #            expected = new_expected
+        #            break
+        #elif nodefeat == 1:
+        #    new_expected = []
+        #    for reco in expected:
+        #        case, lvl = reco
+        #        if lvl == 3:
+        #            new_expected.append((case, 3))
+        #            expected = new_expected
+        #            break
 
         return expected
 

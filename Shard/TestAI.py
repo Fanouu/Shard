@@ -258,11 +258,17 @@ while True:
             else:
                 ligne, colonne = rectifieAI()
                 action = Agent.XYToPosition(ligne, colonne)
+
+                target = [(action, 1.0)]
+                agent.add_data(etat_jeu(), target)
+
                 grille[ligne][colonne] = "O"
 
             #agent.save(etat_jeu(), play[3])
-            agent.save(play[3], play[3])
-            agent.save(etat_jeu(), etat_jeu())
+            #if not all(0 not in ligne for ligne in play[3]):
+                # agent.save(play[3], play[3])
+            #if not all(0 not in ligne for ligne in etat_jeu()):
+                # agent.save(etat_jeu(), etat_jeu())
             joueur = 1
             if check_victory("O"):
 
