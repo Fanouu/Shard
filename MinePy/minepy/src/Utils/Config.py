@@ -76,8 +76,3 @@ class config:
             base = base[name]
 
             i = i + 1
-
-
-config = config("test.yml", CONFIG_YAML)
-config.setNested("ola.tg", "salut")
-config.save()
