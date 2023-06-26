@@ -1,6 +1,8 @@
 import json
 import os.path
 
+import yaml
+
 CONFIG_YAML = 0
 CONFIG_JSON = 1
 
@@ -23,12 +25,20 @@ class config:
         if self.type == CONFIG_JSON:
             with open(self.path, "r") as file:
                 self.config = json.load(file)
+        if self.type == CONFIG_YAML:
+            with open(self.path, "r") as file:
+                load = yaml.full_load(file)
+                if load is None:
+                    load = {}
+                self.config = load
 
     def save(self):
         data = ""
         if self.type == CONFIG_JSON:
             data = json.dumps(self.config)
-
+        if self.type == CONFIG_YAML:
+            if len(self.config) > 0:
+                data = yaml.dump(self.config)
         with open(self.path, "w") as file:
             file.write(data)
 
@@ -68,8 +78,6 @@ class config:
             i = i + 1
 
 
-config = config("test.json", CONFIG_JSON)
-print(config.getNested("ola.tg"))
+config = config("test.yml", CONFIG_YAML)
 config.setNested("ola.tg", "salut")
-print(config.getNested("ola.tg"))
 config.save()
