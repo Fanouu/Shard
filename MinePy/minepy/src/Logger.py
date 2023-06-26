@@ -16,16 +16,11 @@ class Logger:
 
         return prefix
 
-    def send(self, COLOR, level, text):
-        print(COLOR + self.getPrefix() + level + ":" + Style.RESET_ALL, self.valueIsString(text))
-    def warning(self, text):
+    def send(self, COLOR, level, text: str):
+        print(COLOR + self.getPrefix() + level + ":" + Style.RESET_ALL, str(text))
+
+    def warning(self, text: str):
         self.send(Fore.RED, "[WARNING]", text)
 
-    def notice(self, text):
+    def notice(self, text: str):
         self.send(Fore.BLUE, "[NOTICE]", text)
-
-    def valueIsString(self, value):
-        if type(value) != str:
-            raise TypeError(f"\"{value}\" is not a string")
-
-        return value
