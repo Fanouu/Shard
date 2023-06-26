@@ -1,4 +1,6 @@
 import os.path
+import threading
+
 from keras.preprocessing import image
 import numpy as np
 import dog
