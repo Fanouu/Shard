@@ -1,5 +1,10 @@
 import socket
 
+from minepy.src.packets.BedrockProtocol import type
+from minepy.src.packets.Packet import Packet
+from minepy.src.packets.UnconnectedPing import UnconnectedPing
+
+
 class ServerSocket:
     socket = None
     ip = None
@@ -10,13 +15,25 @@ class ServerSocket:
         self.ip = ip
         self.port = int(port)
 
+    def sendPacketTo(self, packet: Packet, address):
+        packet.encode()
+        self.socket.sendto(packet.data, address)
     def start(self):
         self.socket.bind((self.ip, self.port))
 
         while True:
-            data, serverAddress = self.socket.recvfrom(4096)
-            self.onRun(data, serverAddress)
+            data, clientAddress = self.socket.recvfrom(4096)
+            self.onRun(data, clientAddress)
 
-    def onRun(self, data, serverAddr):
+    def onRun(self, data, clientAddress):
         print(data)
-        print(serverAddr)
+        print(clientAddress)
+        packetId = data[0]
+
+        print(packetId)
+        print(type.UNCONNECTED_PING)
+        if packetId == type.UNCONNECTED_PING:
+            packet = UnconnectedPing(data)
+            packet.decode()
+            print(packet.toDict())
+            print("succes")
