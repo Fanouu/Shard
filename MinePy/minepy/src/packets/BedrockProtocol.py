@@ -1,3 +1,3 @@
-class type:
+class BedrockType:
     UNCONNECTED_PING = 0x01
-    UNCONNECTED_PONG = 0xc1
+    UNCONNECTED_PONG = 0x1c

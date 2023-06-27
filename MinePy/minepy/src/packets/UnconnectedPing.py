@@ -3,7 +3,7 @@ from minepy.src.packets.Packet import Packet
 
 
 class UnconnectedPing(Packet):
-    packet_id = BedrockProtocol.type.UNCONNECTED_PING
+    packet_id = BedrockProtocol.BedrockType.UNCONNECTED_PING
 
     client_timestamp: int = None
     magic: bytes = None

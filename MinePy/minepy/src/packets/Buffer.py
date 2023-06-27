@@ -87,7 +87,7 @@ class Buffer:
     def putString(self, value):
         self.putShort(len(value))
         if not isinstance(value, bytes):
-            data = value.encode('utf-8')
+            value = value.encode('utf-8')
         self.add(value)
 
     def read_magic(self):
@@ -103,8 +103,20 @@ class Buffer:
     def readUnsignedInt24le(self):
         return struct.unpack("<I", self.get(3) + b'\x00')[0]
 
-    def putUnsignedInt24le(self, data):
-        self.add(struct.pack("<I", data)[:3])
+    def putUnsignedInt24le(self, value):
+        self.add(struct.pack("<I", value)[:3])
+
+    def readLong(self):
+        return struct.unpack('>q', self.get(self.LONG_SIZE))[0]
+
+    def putLong(self, value):
+        self.add(struct.pack('>q', value))
+
+    def readUnsignedlong(self):
+        return struct.unpack('>Q', self.get(self.LONG_SIZE))[0]
+
+    def putUnsignedlong(self, value):
+        self.add(struct.pack('>Q', value))
 
     def read_address(self):
         ipv = self.readByte()

@@ -1,8 +1,10 @@
 import socket
 
-from minepy.src.packets.BedrockProtocol import type
+from minepy.src import Server
+from minepy.src.packets.BedrockProtocol import BedrockType
 from minepy.src.packets.Packet import Packet
 from minepy.src.packets.UnconnectedPing import UnconnectedPing
+from minepy.src.packets.UnconnectedPong import UnconnectedPong
 
 
 class ServerSocket:
@@ -10,10 +12,12 @@ class ServerSocket:
     ip = None
     port = None
 
-    def __init__(self, ip, port):
+    server = None
+    def __init__(self, server, ip, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.ip = ip
         self.port = int(port)
+        self.server = server
 
     def sendPacketTo(self, packet: Packet, address):
         packet.encode()
@@ -31,9 +35,16 @@ class ServerSocket:
         packetId = data[0]
 
         print(packetId)
-        print(type.UNCONNECTED_PING)
-        if packetId == type.UNCONNECTED_PING:
+        print(BedrockType.UNCONNECTED_PING)
+        if packetId == BedrockType.UNCONNECTED_PING:
             packet = UnconnectedPing(data)
             packet.decode()
             print(packet.toDict())
             print("succes")
+            pongPacket = UnconnectedPong()
+            pongPacket.client_timestamp = packet.client_timestamp
+            pongPacket.serverData = self.server.getServerDataForPonPacket()
+            pongPacket.serverGUID = self.server.SERVER_UUID
+            pongPacket.magic = packet.magic
+
+            self.sendPacketTo(pongPacket, clientAddress)
