@@ -17,11 +17,8 @@ class config:
     def __init__(self, path: str, type: int):
         self.type = type
         self.path = path
-        if not os.path.exists(path):
-            open(path, "w+")
-            self.save()
-
-        self.load()
+        if os.path.exists(path):
+            self.load()
 
     def load(self):
         if self.type == CONFIG_JSON:
@@ -36,7 +33,7 @@ class config:
         if self.type == CONFIG_PROPERTIES:
             with open(self.path, "r") as file:
                 properties = Properties()
-                properties.load(file)
+                properties.load(file, "utf-8")
                 properties_dict = {}
 
                 for item in properties.items():
@@ -52,13 +49,11 @@ class config:
                 data = yaml.dump(self.config)
         if self.type == CONFIG_PROPERTIES:
             properties = Properties()
-            for index, value in self.config:
-                properties[index] = value
+            for index in self.config:
+                properties[str(index)] = str(self.config[index])
 
             with open(self.path, "wb") as file:
-                file.seek(0)
-                file.truncate(0)
-                properties.store(file, encoding="utf-8")
+                properties.store(file)
             return
 
         with open(self.path, "w") as file:
