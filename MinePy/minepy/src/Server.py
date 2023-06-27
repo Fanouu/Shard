@@ -1,9 +1,15 @@
 import socketserver
-import Logger
+from minepy.src import Logger
+from minepy.src.Manager import ServerConfigManager
 
 class server:
     logger = None
     server_datapath = None
+
+    server_configManager = None
+
+    def getServerConfigManager(self):
+        return self.server_configManager
 
     def getServerDataPath(self):
         return self.server_datapath
@@ -13,6 +19,4 @@ class server:
 
     def __init__(self):
         self.logger = Logger.Logger(["Server"])
-
-
-server = server()
+        self.server_configManager = ServerConfigManager.ServerConfigManager("")

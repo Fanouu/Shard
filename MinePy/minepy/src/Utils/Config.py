@@ -1,11 +1,12 @@
 import json
 import os.path
 
+from jproperties import Properties
 import yaml
 
 CONFIG_YAML = 0
 CONFIG_JSON = 1
-
+CONFIG_PROPERTIES = 2
 
 class config:
     path = None
@@ -31,6 +32,16 @@ class config:
                 if load is None:
                     load = {}
                 self.config = load
+        if self.type == CONFIG_PROPERTIES:
+            with open(self.path, "r") as file:
+                properties = Properties()
+                properties.load(file)
+                properties_dict = {}
+
+                for item in properties.items():
+                    properties_dict[item[0]] = item[1].data
+                self.config = properties_dict
+
 
     def save(self):
         data = ""
@@ -39,6 +50,15 @@ class config:
         if self.type == CONFIG_YAML:
             if len(self.config) > 0:
                 data = yaml.dump(self.config)
+        if self.type == CONFIG_PROPERTIES:
+            properties = Properties()
+            for index, value in self.config:
+                properties[index] = value
+
+            with open(self.path, "w") as file:
+                properties.store(file)
+            return
+
         with open(self.path, "w") as file:
             file.write(data)
 
@@ -76,3 +96,9 @@ class config:
             base = base[name]
 
             i = i + 1
+
+    def setAll(self, value: dict):
+        self.config = value
+
+    def getAll(self):
+        return self.config
