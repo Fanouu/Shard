@@ -1,6 +1,5 @@
 import socket
 
-
 class ServerSocket:
     socket = None
     ip = None
@@ -9,7 +8,7 @@ class ServerSocket:
     def __init__(self, ip, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.ip = ip
-        self.port = port
+        self.port = int(port)
 
     def start(self):
         self.socket.bind((self.ip, self.port))

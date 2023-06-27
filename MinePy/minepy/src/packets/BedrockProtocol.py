@@ -1,0 +1,3 @@
+class type:
+    UNCONNECTED_PING = 0x01
+    UNCONNECTED_PONG = 0xc1
