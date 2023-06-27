@@ -31,9 +31,9 @@ class config:
                     load = {}
                 self.config = load
         if self.type == CONFIG_PROPERTIES:
-            with open(self.path, "r") as file:
+            with open(self.path, "rb") as file:
                 properties = Properties()
-                properties.load(file, "utf-8")
+                properties.load(file, "UTF-8", True)
                 properties_dict = {}
 
                 for item in properties.items():
