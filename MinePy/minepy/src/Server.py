@@ -17,6 +17,8 @@ class server:
     def getServerLogger(self):
         return self.logger
 
-    def __init__(self):
+    def __init__(self, datapath):
+        print("initing...")
+        self.server_datapath = datapath
         self.logger = Logger.Logger(["Server"])
-        self.server_configManager = ServerConfigManager.ServerConfigManager("")
+        self.server_configManager = ServerConfigManager.ServerConfigManager(self.server_datapath)

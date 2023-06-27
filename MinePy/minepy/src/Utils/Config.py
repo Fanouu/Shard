@@ -8,6 +8,7 @@ CONFIG_YAML = 0
 CONFIG_JSON = 1
 CONFIG_PROPERTIES = 2
 
+
 class config:
     path = None
     config = {}
@@ -42,7 +43,6 @@ class config:
                     properties_dict[item[0]] = item[1].data
                 self.config = properties_dict
 
-
     def save(self):
         data = ""
         if self.type == CONFIG_JSON:
@@ -55,8 +55,10 @@ class config:
             for index, value in self.config:
                 properties[index] = value
 
-            with open(self.path, "w") as file:
-                properties.store(file)
+            with open(self.path, "wb") as file:
+                file.seek(0)
+                file.truncate(0)
+                properties.store(file, encoding="utf-8")
             return
 
         with open(self.path, "w") as file:

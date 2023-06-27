@@ -1,3 +1,3 @@
 from minepy.src import Server
 
-Server.server()
+Server.server("/Shard2/MinePy")
