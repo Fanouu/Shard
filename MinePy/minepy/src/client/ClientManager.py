@@ -17,13 +17,3 @@ class PlayerManager:
             return self.players[id]
         else:
             return None
-
-    def getPlayerByName(self, value: str) -> Player:
-        for id in self.players:
-            player = self.getPlayerById(id)
-            if player is None:
-                continue
-
-            if player.getName() == value:
-                return player
-        return None
