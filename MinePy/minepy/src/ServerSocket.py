@@ -21,9 +21,11 @@ class ServerSocket(Thread):
 
     server = None
 
+    clients = []
+
     def __init__(self, server, ip, port):
         super().__init__()
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.SOL_UDP)
         self.ip = ip
         self.port = int(port)
         self.server = server
@@ -37,7 +39,7 @@ class ServerSocket(Thread):
     def run(self) -> None:
         self.socket.bind((self.ip, self.port))
         while True:
-            data, clientAddress = self.socket.recvfrom(4096)
+            data, clientAddress = self.socket.recvfrom(65535)
             self.onRun(data, clientAddress)
 
     def onRun(self, data, clientAddress):
