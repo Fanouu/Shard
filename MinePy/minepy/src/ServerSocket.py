@@ -6,6 +6,11 @@ from minepy.src.packets.BedrockProtocolInfo import BedrockType
 from minepy.src.packets.Packet import Packet
 from minepy.src.packets.UnconnectedPing import UnconnectedPing
 from minepy.src.packets.UnconnectedPong import UnconnectedPong
+from minepy.src.packets.client.ClientOpenConnection import ClientOpenConnection
+from minepy.src.packets.client.ClientTestConnection1 import ClientTestConnection1
+from minepy.src.packets.client.IncompatibleRaknetProtocolVersion import IncompatibleRaknetProtocolVersion
+from minepy.src.packets.server.ClientOpenConnectionReply import ClientOpenConnectionReply
+from minepy.src.packets.server.ClientTestConnection1Reply import ClientTestConnection1Reply
 
 
 class ServerSocket(Thread):
@@ -51,3 +56,37 @@ class ServerSocket(Thread):
             pongPacket.magic = packet.magic
 
             self.sendPacketTo(pongPacket, clientAddress)
+        if packetId == BedrockType.CLIENT_TESTCONNECTION1:
+            packet = ClientTestConnection1(data)
+            packet.decode()
+
+            self.server.getServerLogger().debug("Opening Connection on: " + str(clientAddress[0]) + ":" + str(clientAddress[1]) + "\nRaknet Version: " + str(packet.raknet_protocol_version))
+            if int(packet.raknet_protocol_version) == int(self.server.BEDROCK_PROTOCOL_VERSION):
+                replyPacket = ClientTestConnection1Reply()
+                replyPacket.magic = packet.magic
+                replyPacket.server_uid = self.server.SERVER_UUID
+                replyPacket.raknet_null_padding = packet.raknet_null_padding
+
+                self.sendPacketTo(replyPacket, clientAddress)
+            else:
+                incompatiblePacket = IncompatibleRaknetProtocolVersion()
+                incompatiblePacket.server_uid = self.server.SERVER_UUID
+                incompatiblePacket.raknet_protocol_version = self.server.BEDROCK_PROTOCOL_VERSION
+                incompatiblePacket.magic = packet.magic
+
+                self.sendPacketTo(incompatiblePacket, clientAddress)
+        if packetId == BedrockType.CLIENT_OPENCONNECTION:
+            packet = ClientOpenConnection(data)
+            packet.decode()
+
+            replyPacket = ClientOpenConnectionReply()
+            replyPacket.magic = packet.magic
+            replyPacket.server_uid = self.server.SERVER_UUID
+            print(packet.server_address)
+            print(clientAddress)
+            cA = (clientAddress[0], clientAddress[1], 4)
+            print(cA)
+            replyPacket.client_address = cA
+            replyPacket.mtu = packet.mtu
+
+            self.sendPacketTo(replyPacket, clientAddress)

@@ -17,7 +17,7 @@ class server:
     server_configManager = None
     playerManager = None
 
-    BEDROCK_PROTOCOL_VERSION = 589
+    BEDROCK_PROTOCOL_VERSION = 11
     VERSION = '1.20.0'
     SERVER_UUID = None
 
@@ -49,13 +49,14 @@ class server:
 
     def isDev(self) -> bool:
         return self.dev
+
     def __init__(self, datapath):
         self.server_datapath = datapath
         self.logger = Logger.Logger(["Server"])
         self.server_configManager = ServerConfigManager.ServerConfigManager(self.server_datapath)
         self.dev = self.getServerConfigManager().getDeveloppement()
         self.playerManager = PlayerManager(self)
-        self.SERVER_UUID = random.randint(10000000, 99999999)
+        self.SERVER_UUID = random.randint(1, 99999999)
 
         self.ip = self.getServerConfigManager().getServerIp()
         self.port = self.getServerConfigManager().getServerPort()
@@ -76,8 +77,8 @@ class server:
             str(self.getServerConfigManager().getMaxPlayers()),
             str(self.SERVER_UUID),
             self.getServerConfigManager().getMotd(),
-            str(0),
-            str(0),
+            str('Survival'),
+            str(1),
             str(self.port),
             str(self.getServerConfigManager().getServerPortV6())
         ])
