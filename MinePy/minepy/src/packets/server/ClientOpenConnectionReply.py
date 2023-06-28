@@ -14,6 +14,6 @@ class ClientOpenConnectionReply(Packet):
     def encodePayload(self):
         self.putMagic(self.magic)
         self.putLong(self.server_uid)
-        self.write_address(self.client_address)
+        self.putAddress(self.client_address[0], self.client_address[1])
         self.putShort(self.mtu)
         self.putBool(self.encryption)

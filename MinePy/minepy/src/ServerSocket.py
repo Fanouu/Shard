@@ -82,11 +82,7 @@ class ServerSocket(Thread):
             replyPacket = ClientOpenConnectionReply()
             replyPacket.magic = packet.magic
             replyPacket.server_uid = self.server.SERVER_UUID
-            print(packet.server_address)
-            print(clientAddress)
-            cA = (clientAddress[0], clientAddress[1], 4)
-            print(cA)
-            replyPacket.client_address = cA
+            replyPacket.client_address = clientAddress
             replyPacket.mtu = packet.mtu
 
             self.sendPacketTo(replyPacket, clientAddress)

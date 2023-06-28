@@ -26,7 +26,8 @@ class Buffer:
             self.offset += pos
             return self.data[self.offset - pos:self.offset]
         else:
-            raise BinaryDataException(f"Not enough bytes left in buffer: need {pos}, have {len(self.data) - self.offset}")
+            raise BinaryDataException(
+                f"Not enough bytes left in buffer: need {pos}, have {len(self.data) - self.offset}")
 
     def getRemaining(self):
         return self.data[len(self.data) - self.offset]
@@ -54,8 +55,8 @@ class Buffer:
         return struct.unpack('B', self.get(1))[0]
 
     def putUnsignedByte(self, value):
-        if not isinstance(value, bytes):
-            data = value.encode('utf-8')
+        #if not isinstance(value, bytes) or not isinstance(value, int):
+        #    value = value.encode('utf-8')
         self.add(struct.pack('B', value))
 
     def putShort(self, value):
@@ -132,12 +133,9 @@ class Buffer:
         else:
             raise BinaryDataException('IP version is not 4')
 
-    def write_address(self, address: tuple):
-        if address[2] == 4:
-            self.putByte(address[2])
-            hostname_parts: list = address[0].split('.')
-            for part in hostname_parts:
-                self.putByte(~int(part) & 0xff)
-            self.putShort(address[1])
-        else:
-            raise BinaryDataException('IP version is not 4')
+    def putAddress(self, addr: str, port: int, version: int = 4):
+        self.putByte(version)
+        if version == 4:
+            for s in str(addr).split("."):
+                self.putUnsignedByte(int(s) & 0xff)
+            self.putUnsignedShort(port)
