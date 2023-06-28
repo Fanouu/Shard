@@ -1,4 +1,4 @@
-from minepy.src.packets.BedrockProtocol import BedrockType
+from minepy.src.packets.BedrockProtocolInfo import BedrockType
 from minepy.src.packets.Packet import Packet
 
 
@@ -8,7 +8,7 @@ class UnconnectedPong(Packet):
     client_timestamp: int = None
     magic: bytes = None
     serverGUID: int = None
-    serverData: str = None
+    serverData: bytes = None
 
     def encodePayload(self):
         self.putLong(self.client_timestamp)

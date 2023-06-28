@@ -17,7 +17,7 @@ class Buffer:
     FLOAT_SIZE = 4
     DOUBLE_SIZE = 8
 
-    def __init__(self, data=b'', offset: int = 0):
+    def __init__(self, data=b'', offset=0):
         self.data = data
         self.offset = offset
 
@@ -31,8 +31,10 @@ class Buffer:
     def getRemaining(self):
         return self.data[len(self.data) - self.offset]
 
-    def add(self, text):
-        self.data += text
+    def add(self, value):
+        if not isinstance(value, bytes):
+            value = bytes(str(value), 'utf-8')
+        self.data += bytearray(value)
 
     def readByte(self):
         return struct.unpack('b', self.get(self.BYTE_SIZE))[0]
@@ -46,7 +48,7 @@ class Buffer:
         return struct.unpack('?', self.get(self.BOOL_SIZE))[0]
 
     def putBool(self, value):
-        return self.add(struct.pack('?', value))
+        self.add(struct.pack('?', value))
 
     def readUnsignedbyte(self):
         return struct.unpack('B', self.get(1))[0]

@@ -1,9 +1,9 @@
-from minepy.src.packets import BedrockProtocol
+from minepy.src.packets import BedrockProtocolInfo
 from minepy.src.packets.Packet import Packet
 
 
 class UnconnectedPing(Packet):
-    packet_id = BedrockProtocol.BedrockType.UNCONNECTED_PING
+    packet_id = BedrockProtocolInfo.BedrockType.UNCONNECTED_PING
 
     client_timestamp: int = None
     magic: bytes = None

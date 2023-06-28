@@ -15,14 +15,22 @@ class ServerConfigManager:
                 "server-name": "Test",
                 "server-ip": '127.0.0.1',
                 "server-port": 19132,
+                "server-portV6": 19133,
                 "server-motd": 'MinePy: Bedrock Server',
                 "max-players": 10,
-                "default-gamemode": 0
+                "default-gamemode": 0,
+                "developpement": True
             })
             config.save()
         self.config = config
 
         print(self.getMotd())
+
+    def getDeveloppement(self) -> bool:
+        return bool(self.getConfig().get("developpement"))
+
+    def getServerPortV6(self):
+        return self.getConfig().get("server-portV6")
 
     def getMotd(self):
         return self.getConfig().get("server-motd")

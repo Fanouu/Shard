@@ -24,3 +24,9 @@ class Logger:
 
     def notice(self, text: str):
         self.send(Fore.BLUE, "[NOTICE]", text)
+
+    def info(self, text: str):
+        self.send(Fore.GREEN, "[INFO]", text)
+
+    def debug(self, text: str):
+        self.send(Fore.YELLOW, "[DEBUG]", text)

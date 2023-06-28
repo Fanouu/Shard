@@ -1,14 +1,21 @@
 import random
 import socketserver
 import uuid
+from threading import Thread
+
+from colorama import Style, Fore
 
 from minepy.src import Logger, ServerSocket
-from minepy.src.Manager import ServerConfigManager
+from minepy.src.Utils import Color
+from minepy.src.manager import ServerConfigManager
+from minepy.src.manager.PlayerManager import PlayerManager
+
 
 class server:
     logger = None
     server_datapath = None
     server_configManager = None
+    playerManager = None
 
     BEDROCK_PROTOCOL_VERSION = 589
     VERSION = '1.20.0'
@@ -16,6 +23,11 @@ class server:
 
     ip = None
     port = None
+
+    dev = False
+
+    def getPlayerManager(self) -> PlayerManager:
+        return self.playerManager
 
     def getServerConfigManager(self) -> ServerConfigManager.ServerConfigManager:
         return self.server_configManager
@@ -26,18 +38,33 @@ class server:
     def getServerLogger(self):
         return self.logger
 
+    def getPort(self):
+        return self.port
+
+    def getIp(self):
+        return self.ip
+
+    def getPlayers(self):
+        return self.getPlayerManager().getPlayers()
+
+    def isDev(self) -> bool:
+        return self.dev
     def __init__(self, datapath):
-        print("initing...")
         self.server_datapath = datapath
         self.logger = Logger.Logger(["Server"])
         self.server_configManager = ServerConfigManager.ServerConfigManager(self.server_datapath)
-        self.SERVER_UUID = random.randint(20, 40)
+        self.dev = self.getServerConfigManager().getDeveloppement()
+        self.playerManager = PlayerManager(self)
+        self.SERVER_UUID = random.randint(10000000, 99999999)
 
         self.ip = self.getServerConfigManager().getServerIp()
         self.port = self.getServerConfigManager().getServerPort()
 
+        self.getServerLogger().notice("Creating Server Socket..")
         socketServer = ServerSocket.ServerSocket(self, self.ip, self.port)
+        self.getServerLogger().notice("Connecting Server Socket...")
         socketServer.start()
+        self.getServerLogger().info(f"Server Socket listening on: {Fore.RED}{self.ip}:{self.port} {Style.RESET_ALL}")
 
     def getServerDataForPonPacket(self):
         return ";".join([
@@ -45,12 +72,12 @@ class server:
             self.getServerConfigManager().getMotd(),
             str(self.BEDROCK_PROTOCOL_VERSION),
             self.VERSION,
-            str(1),
+            str(len(self.getPlayers())),
             str(self.getServerConfigManager().getMaxPlayers()),
             str(self.SERVER_UUID),
             self.getServerConfigManager().getMotd(),
             str(0),
             str(0),
             str(self.port),
-            str(19133)
+            str(self.getServerConfigManager().getServerPortV6())
         ])

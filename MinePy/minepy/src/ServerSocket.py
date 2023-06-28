@@ -1,19 +1,23 @@
 import socket
+from threading import Thread
 
 from minepy.src import Server
-from minepy.src.packets.BedrockProtocol import BedrockType
+from minepy.src.packets.BedrockProtocolInfo import BedrockType
 from minepy.src.packets.Packet import Packet
 from minepy.src.packets.UnconnectedPing import UnconnectedPing
 from minepy.src.packets.UnconnectedPong import UnconnectedPong
 
 
-class ServerSocket:
+class ServerSocket(Thread):
     socket = None
+
     ip = None
     port = None
 
     server = None
+
     def __init__(self, server, ip, port):
+        super().__init__()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.ip = ip
         self.port = int(port)
@@ -21,26 +25,25 @@ class ServerSocket:
 
     def sendPacketTo(self, packet: Packet, address):
         packet.encode()
+        if self.server.isDev():
+            self.server.getServerLogger().debug("packet sent: " + str(packet.data[1:]))
         self.socket.sendto(packet.data, address)
-    def start(self):
-        self.socket.bind((self.ip, self.port))
 
+    def run(self) -> None:
+        self.socket.bind((self.ip, self.port))
         while True:
             data, clientAddress = self.socket.recvfrom(4096)
             self.onRun(data, clientAddress)
 
     def onRun(self, data, clientAddress):
-        print(data)
-        print(clientAddress)
         packetId = data[0]
 
-        print(packetId)
-        print(BedrockType.UNCONNECTED_PING)
+        if self.server.isDev():
+            self.server.getServerLogger().debug("packet receive: " + str(data))
+
         if packetId == BedrockType.UNCONNECTED_PING:
             packet = UnconnectedPing(data)
             packet.decode()
-            print(packet.toDict())
-            print("succes")
             pongPacket = UnconnectedPong()
             pongPacket.client_timestamp = packet.client_timestamp
             pongPacket.serverData = self.server.getServerDataForPonPacket()
