@@ -1,10 +1,12 @@
+from typing import Any
+
 from minepy.src.client.Client import Client
 
 
 class PlayerManager:
     server = None
 
-    clients = []
+    clients = {}
 
     def __init__(self, Server: server):
         self.server = Server
@@ -12,8 +14,9 @@ class PlayerManager:
     def getClients(self):
         return self.clients
 
-    def getClient(self, address) -> Client:
-        if id in self.players:
-            return self.players[id]
+    def getClient(self, address) -> Any | None:
+        addressSTR = ":".join(address)
+        if addressSTR in self.clients:
+            return self.clients[addressSTR]
         else:
             return None
