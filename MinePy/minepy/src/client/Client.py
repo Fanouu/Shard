@@ -40,6 +40,7 @@ class Client:
         self.last_receive_time: float = time()
 
     def sendPacket(self, packet: Packet):
+        self.server.getServerLogger().debug("Packet ID: " + str(packet.packet_id))
         self.server.socketServer.sendPacketTo(packet, self.address)
 
     def onRun(self, data):
@@ -75,12 +76,13 @@ class Client:
     def handle_frame_set(self, data: bytes) -> None:
         packet: FrameSet = FrameSet(data)
         packet.decode()
+        print("FrameSET BODY: " + str(packet.data))
         if packet.sequence_number not in self.client_sequence_numbers:
             if packet.sequence_number in self.nack_queue:
                 self.nack_queue.remove(packet.sequence_number)
             self.client_sequence_numbers.append(packet.sequence_number)
             self.ack_queue.append(packet.sequence_number)
-            hole_size: int = packet.sequence_number - self.client_sequence_number
+            hole_size = packet.sequence_number - self.client_sequence_number
             if hole_size > 0:
                 for sequence_number in range(self.client_sequence_number + 1, hole_size):
                     if sequence_number not in self.client_sequence_numbers:
@@ -90,7 +92,7 @@ class Client:
                 if not ReliabilityTool.reliable(frame_1.reliability):
                     self.handle_frame(frame_1)
                 else:
-                    hole_size: int = frame_1.reliable_frame_index - self.client_reliable_frame_index
+                    hole_size = frame_1.reliable_frame_index - self.client_reliable_frame_index
                     if hole_size == 0:
                         self.handle_frame(frame_1)
                         self.client_reliable_frame_index += 1
@@ -109,10 +111,20 @@ class Client:
 
     def handle_frame(self, packet: Frame) -> None:
         if packet.fragmented:
+            self.server.getServerLogger().debug("FRAGMENTED")
             self.handle_fragmented_frame(packet)
         else:
+            packetId = packet.body[0]
+            self.server.getServerLogger().debug("PACKED ID:" + str(packetId))
+            self.server.getServerLogger().debug("PACKET BODY: " + str(packet.body))
             if not self.connected:
-                if packet.body[0] == BedrockType.CONNECTION_REQUEST:
+                if packetId == ServerAcceptConnectionRequest.packet_id:
+                    print("SAME ID")
+                    sPacket = ServerAcceptConnectionRequest(packet.body)
+                    sPacket.decode()
+                    print(sPacket)
+                if packetId == BedrockType.CONNECTION_REQUEST:
+                    self.server.getServerLogger().debug("CONNECTION REQUEST")
                     connectionRequest = ClientRequestConnection(packet.body)
                     connectionRequest.decode()
 
@@ -120,24 +132,31 @@ class Client:
                     serverAcceptRequest.client_address = self.address
                     serverAcceptRequest.system_index = 0
                     serverAcceptRequest.server_guid = self.server.SERVER_UUID
-                    serverAcceptRequest.system_addresses = [("255.255.255.255", 19132, 4)] * 20
+                    serverAcceptRequest.system_addresses = [("255.255.255.255", 19132, 4)] * 10
                     serverAcceptRequest.request_timestamp = connectionRequest.request_timestamp
                     serverAcceptRequest.accepted_timestamp = int(time())
+                    self.server.getServerLogger().debug("Encoding Server AcceptConnectionRequest")
                     serverAcceptRequest.encode()
+                    self.server.getServerLogger().debug("SERVER ACCEPT BODY: " + str(serverAcceptRequest.data))
 
                     new_frame: Frame = Frame()
                     new_frame.reliability = 0
                     new_frame.body = serverAcceptRequest.data
                     self.add_to_queue(new_frame)
-                elif packet.body[0] == BedrockType.NEW_INCOMING_CONNECTION:
+                elif packetId == BedrockType.NEW_INCOMING_CONNECTION:
+                    self.server.getServerLogger().debug("INCOMING CONNECTION")
                     packet_1: ClientIncomingConnection = ClientIncomingConnection(packet.body)
                     packet_1.decode()
+                    print(int(packet_1.server_address[1]))
+                    print(int(self.server.getPort()))
                     if int(packet_1.server_address[1]) == int(self.server.getPort()):
+                        print("OK")
                         self.connected: bool = True
                         if hasattr(self.server, "interface"):
                             if hasattr(self.server.interface, "on_new_incoming_connection"):
                                 self.server.interface.on_new_incoming_connection(self)
-            elif packet.body[0] == BedrockType.ONLINE_PING:
+            elif packetId == BedrockType.ONLINE_PING:
+                print("ONLINE PING")
                 onlinePing = OnlinePing(packet.body)
                 onlinePing.decode()
                 onlinePong = OnlinePong()
@@ -149,9 +168,11 @@ class Client:
                 new_frame.reliability = 0
                 new_frame.body = onlinePong.data
                 self.add_to_queue(new_frame, False)
-            elif packet.body[0] == BedrockType.DISCONNECT:
+            elif packetId == BedrockType.DISCONNECT:
+                print("DISCONNECTION !")
                 self.disconnect()
             else:
+                print("GAME PACKET")
                 self.serverSocket.receiveGamePacket(packet, self)
 
     def disconnect(self):
@@ -162,12 +183,13 @@ class Client:
             self.queue.sequence_number = self.server_sequence_number
             self.server_sequence_number += 1
             self.recovery_queue[self.queue.sequence_number]: object = self.queue
-            print(self.queue)
             self.queue.encode()
             self.sendPacket(self.queue)
             self.queue: FrameSet = FrameSet()
 
     def add_to_queue(self, packet: Frame, is_imediate: bool = True) -> None:
+        print(packet)
+        print("ADD TO QUEUE FRAME")
         if ReliabilityTool.reliable(packet.reliability):
             packet.reliable_frame_index = self.server_reliable_frame_index
             self.server_reliable_frame_index += 1
@@ -175,7 +197,7 @@ class Client:
                 packet.ordered_frame_index = self.channel_index[packet.order_channel]
                 self.channel_index[packet.order_channel] += 1
         if packet.get_size() > self.mtu_size:
-            fragmented_body: list = []
+            fragmented_body = []
             for i in range(0, len(packet.body), self.mtu_size):
                 fragmented_body.append(packet.body[i:i + self.mtu_size])
             for index, body in enumerate(fragmented_body):
@@ -196,8 +218,8 @@ class Client:
                     self.queue.frames.append(new_packet)
                     self.send_queue()
                 else:
-                    frame_size: int = new_packet.get_size()
-                    queue_size: int = self.queue.get_size()
+                    frame_size = new_packet.get_size()
+                    queue_size = self.queue.get_size()
                     if frame_size + queue_size >= self.mtu_size:
                         self.send_queue()
                     self.queue.frames.append(new_packet)
@@ -207,8 +229,8 @@ class Client:
                 self.queue.frames.append(packet)
                 self.send_queue()
             else:
-                frame_size: int = packet.get_size()
-                queue_size: int = self.queue.get_size()
+                frame_size = packet.get_size()
+                queue_size = self.queue.get_size()
                 if frame_size + queue_size >= self.mtu_size:
                     self.send_queue()
                 self.queue.frames.append(packet)
@@ -217,7 +239,7 @@ class Client:
         if len(self.ack_queue) > 0:
             packet: Ack = Ack()
             packet.sequence_numbers = self.ack_queue
-            self.ack_queue: list = []
+            self.ack_queue = []
             packet.encode()
             self.sendPacket(packet)
 
@@ -225,6 +247,6 @@ class Client:
         if len(self.nack_queue) > 0:
             packet: Nack = Nack()
             packet.sequence_numbers = self.nack_queue
-            self.nack_queue: list = []
+            self.nack_queue = []
             packet.encode()
             self.sendPacket(packet)

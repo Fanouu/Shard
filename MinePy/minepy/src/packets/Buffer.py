@@ -128,7 +128,7 @@ class Buffer:
         return struct.unpack("<I", self.get(3) + b"\x00")[0]
 
     def read_address(self):
-        ipv = self.readByte()
+        ipv = self.readUnsignedbyte()
         if ipv == 4:
             hostname_parts = []
             for part in range(4):
@@ -137,11 +137,11 @@ class Buffer:
             port = self.readUnsignedShort()
             return hostname, port, ipv
         else:
-            raise BinaryDataException('IP version is not 4')
+            raise BinaryDataException('IP version is not 4, ip version is:' + str(ipv))
 
     def putAddress(self, addr: str, port: int, version: int = 4):
-        self.putByte(version)
         if version == 4:
+            self.putUnsignedByte(version)
             for s in str(addr).split("."):
                 self.putUnsignedByte(int(s) & 0xff)
             self.putUnsignedShort(port)

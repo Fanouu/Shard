@@ -41,7 +41,8 @@ class ServerSocket(Thread):
 
     def sendPacketTo(self, packet: Packet, address):
         if self.server.isDev():
-            self.server.getServerLogger().debug("packet sent: " + str(packet.data[1:]))
+            pass
+            #self.server.getServerLogger().debug("packet sent: " + str(packet.data[1:]))
         self.socket.sendto(packet.data, address)
 
     def start(self) -> None:
@@ -64,7 +65,8 @@ class ServerSocket(Thread):
         packetId = data[0]
 
         if self.server.isDev():
-            self.server.getServerLogger().debug("packet receive: " + str(data))
+            pass
+            #self.server.getServerLogger().debug("packet receive: " + str(data))
 
         if not self.getClientManager().getClient(clientAddress) is None:
             client = self.getClientManager().getClient(clientAddress)

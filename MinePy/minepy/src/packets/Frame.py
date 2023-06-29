@@ -3,7 +3,7 @@ from minepy.src.packets.ReliabilityTool import ReliabilityTool
 
 
 class Frame(Buffer):
-    body = b""
+    body = b''
     fragmented = False
     reliable_frame_index = None
     reliability = None
@@ -14,27 +14,23 @@ class Frame(Buffer):
     index = None
     compound_id = None
 
-    def __init__(self, data=b"", pos=0):
-        super().__init__(data, pos)
-        self.fragmented: bool = False
-
     def decode(self) -> None:
-        flags: int = self.readUnsignedbyte()
-        self.reliability: int = (flags & 0xf4) >> 5
-        self.fragmented: bool = (flags & 0x10) > 0
-        body_length: int = self.readUnsignedShort() >> 3
+        flags = self.readUnsignedbyte()
+        self.reliability = (flags & 0xf4) >> 5
+        self.fragmented = (flags & 0x10) > 0
+        body_length = self.readUnsignedShort() >> 3
         if ReliabilityTool.reliable(self.reliability):
-            self.reliable_frame_index: int = self.readUnsignedTriad_le()
+            self.reliable_frame_index = self.readUnsignedTriad_le()
         if ReliabilityTool.sequenced(self.reliability):
-            self.sequenced_frame_index: int = self.readUnsignedTriad_le()
+            self.sequenced_frame_index = self.readUnsignedTriad_le()
         if ReliabilityTool.ordered(self.reliability):
             self.ordered_frame_index: int = self.readUnsignedTriad_le()
-            self.order_channel: int = self.readUnsignedbyte()
+            self.order_channel = self.readUnsignedbyte()
         if self.fragmented:
-            self.compound_size: int = self.readUnsignedInt()
-            self.compound_id: int = self.readUnsignedShort()
-            self.index: int = self.readUnsignedInt()
-        self.body: bytes = self.get(body_length)
+            self.compound_size = self.readUnsignedInt()
+            self.compound_id = self.readUnsignedShort()
+            self.index = self.readUnsignedInt()
+        self.body = self.get(body_length)
 
     def encode(self) -> None:
         self.putUnsignedByte(self.reliability | 0x10 if self.fragmented else self.reliability)
@@ -52,8 +48,8 @@ class Frame(Buffer):
             self.putUnsignedInt(self.index)
         self.add(self.body)
 
-    def get_size(self) -> int:
-        length: int = 3
+    def get_size(self):
+        length = 3
         if ReliabilityTool.reliable(self.reliability):
             length += 3
         if ReliabilityTool.sequenced(self.reliability):

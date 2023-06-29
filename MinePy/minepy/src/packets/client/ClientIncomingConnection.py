@@ -12,11 +12,11 @@ class ClientIncomingConnection(Packet):
 
     def decodePayload(self) -> None:
         self.server_address = self.read_address()
-        self.system_addresses: list = []
+        self.system_addresses = []
         for i in range(0, 20):
             self.system_addresses.append(self.read_address())
-        self.request_timestamp: int = self.readUnsignedlong()
-        self.accepted_timestamp: int = self.readUnsignedlong()
+        self.request_timestamp = self.readUnsignedlong()
+        self.accepted_timestamp = self.readUnsignedlong()
 
     def encodePayload(self) -> None:
         self.putAddress(self.server_address[0], self.server_address[1])
