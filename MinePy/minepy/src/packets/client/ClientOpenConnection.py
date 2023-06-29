@@ -13,5 +13,5 @@ class ClientOpenConnection(Packet):
     def decodePayload(self):
         self.magic = self.read_magic()
         self.server_address = self.read_address()
-        self.mtu = self.readShort()
-        self.client_guid = self.readLong()
+        self.mtu = self.readUnsignedShort()
+        self.client_guid = self.readUnsignedlong()

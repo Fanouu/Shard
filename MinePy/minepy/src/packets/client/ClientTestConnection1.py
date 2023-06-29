@@ -12,4 +12,4 @@ class ClientTestConnection1(Packet):
     def decodePayload(self):
         self.magic = self.read_magic()
         self.raknet_protocol_version = int(self.readByte())
-        self.raknet_null_padding = self.getRemaining()
+        self.raknet_null_padding = len(self.getRemaining())

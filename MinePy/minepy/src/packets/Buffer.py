@@ -30,7 +30,7 @@ class Buffer:
                 f"Not enough bytes left in buffer: need {pos}, have {len(self.data) - self.offset}")
 
     def getRemaining(self):
-        return self.data[len(self.data) - self.offset]
+        return self.get(len(self.data) - self.offset)
 
     def add(self, value):
         if not isinstance(value, bytes):

@@ -40,7 +40,6 @@ class ServerSocket(Thread):
         return self.clientManager
 
     def sendPacketTo(self, packet: Packet, address):
-        packet.encode()
         if self.server.isDev():
             self.server.getServerLogger().debug("packet sent: " + str(packet.data[1:]))
         self.socket.sendto(packet.data, address)
@@ -57,6 +56,9 @@ class ServerSocket(Thread):
         while self.running:
             data, clientAddress = self.socket.recvfrom(65535)
             self.onRun(data, clientAddress)
+
+    def receiveGamePacket(self, packet, client):
+        print("RECEIVE GAME PACKET !")
 
     def onRun(self, data, clientAddress):
         packetId = data[0]
@@ -76,17 +78,21 @@ class ServerSocket(Thread):
             pongPacket.serverGUID = self.server.SERVER_UUID
             pongPacket.magic = packet.magic
 
+            pongPacket.encode()
+
             self.sendPacketTo(pongPacket, clientAddress)
         if packetId == BedrockType.CLIENT_TESTCONNECTION1:
             packet = ClientTestConnection1(data)
             packet.decode()
 
-            self.server.getServerLogger().debug("Opening Connection on: " + str(clientAddress[0]) + ":" + str(clientAddress[1]) + "\nRaknet Version: " + str(packet.raknet_protocol_version))
+            self.server.getServerLogger().debug("Opening Connection on: " + str(clientAddress[0]) + ":" + str(clientAddress[1]))
+            self.server.getServerLogger().debug("Raknet Version: " + str(packet.raknet_protocol_version))
             if int(packet.raknet_protocol_version) == int(self.server.BEDROCK_PROTOCOL_VERSION):
                 replyPacket = ClientTestConnection1Reply()
                 replyPacket.magic = packet.magic
                 replyPacket.server_uid = self.server.SERVER_UUID
                 replyPacket.raknet_null_padding = packet.raknet_null_padding
+                replyPacket.encode()
 
                 self.sendPacketTo(replyPacket, clientAddress)
             else:
@@ -94,6 +100,7 @@ class ServerSocket(Thread):
                 incompatiblePacket.server_uid = self.server.SERVER_UUID
                 incompatiblePacket.raknet_protocol_version = self.server.BEDROCK_PROTOCOL_VERSION
                 incompatiblePacket.magic = packet.magic
+                incompatiblePacket.encode()
 
                 self.sendPacketTo(incompatiblePacket, clientAddress)
         if packetId == BedrockType.CLIENT_OPENCONNECTION:
@@ -105,6 +112,7 @@ class ServerSocket(Thread):
             replyPacket.server_uid = self.server.SERVER_UUID
             replyPacket.client_address = clientAddress
             replyPacket.mtu = packet.mtu
+            replyPacket.encode()
 
             self.sendPacketTo(replyPacket, clientAddress)
-            self.getClientManager().addClient(clientAddress)
+            self.getClientManager().addClient(clientAddress, packet.mtu)

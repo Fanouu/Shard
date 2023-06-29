@@ -15,5 +15,5 @@ class ClientOpenConnectionReply(Packet):
         self.putMagic(self.magic)
         self.putLong(self.server_uid)
         self.putAddress(self.client_address[0], self.client_address[1])
-        self.putShort(self.mtu)
+        self.putUnsignedShort(self.mtu)
         self.putBool(self.encryption)

@@ -9,7 +9,7 @@ class Packet(Buffer):
         return self.readByte()
 
     def encodeHeader(self):
-        self.putByte(self.packet_id)
+        self.putUnsignedByte(self.packet_id)
 
     def decode(self):
         self.decodeHeader()

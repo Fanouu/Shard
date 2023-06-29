@@ -5,9 +5,13 @@ from minepy.src.packets.BedrockProtocolInfo import BedrockType
 from minepy.src.packets.Frame import Frame
 from minepy.src.packets.FrameSet import FrameSet
 from minepy.src.packets.Nack import Nack
+from minepy.src.packets.OnlinePing import OnlinePing
+from minepy.src.packets.OnlinePong import OnlinePong
 from minepy.src.packets.Packet import Packet
 from minepy.src.packets.ReliabilityTool import ReliabilityTool
 from minepy.src.packets.client.ClientIncomingConnection import ClientIncomingConnection
+from minepy.src.packets.client.ClientRequestConnection import ClientRequestConnection
+from minepy.src.packets.server.ServerAcceptConnectionRequest import ServerAcceptConnectionRequest
 
 
 class Client:
@@ -62,7 +66,7 @@ class Client:
         for sequence_number in packet.sequence_numbers:
             if sequence_number in self.recovery_queue:
                 lost_packet: Packet = self.recovery_queue[sequence_number]
-                lost_packet.sequence_number: int = self.server_sequence_number
+                lost_packet.sequence_number = self.server_sequence_number
                 self.server_sequence_number += 1
                 lost_packet.encode()
                 self.sendPacket(lost_packet)
@@ -109,9 +113,21 @@ class Client:
         else:
             if not self.connected:
                 if packet.body[0] == BedrockType.CONNECTION_REQUEST:
+                    connectionRequest = ClientRequestConnection(packet.body)
+                    connectionRequest.decode()
+
+                    serverAcceptRequest = ServerAcceptConnectionRequest()
+                    serverAcceptRequest.client_address = self.address
+                    serverAcceptRequest.system_index = 0
+                    serverAcceptRequest.server_guid = self.server.SERVER_UUID
+                    serverAcceptRequest.system_addresses = [("255.255.255.255", 19132, 4)] * 20
+                    serverAcceptRequest.request_timestamp = connectionRequest.request_timestamp
+                    serverAcceptRequest.accepted_timestamp = int(time())
+                    serverAcceptRequest.encode()
+
                     new_frame: Frame = Frame()
                     new_frame.reliability = 0
-                    new_frame.body = connection_request_handler.handle(packet.body, self.address, self.server)
+                    new_frame.body = serverAcceptRequest.data
                     self.add_to_queue(new_frame)
                 elif packet.body[0] == BedrockType.NEW_INCOMING_CONNECTION:
                     packet_1: ClientIncomingConnection = ClientIncomingConnection(packet.body)
@@ -122,16 +138,21 @@ class Client:
                             if hasattr(self.server.interface, "on_new_incoming_connection"):
                                 self.server.interface.on_new_incoming_connection(self)
             elif packet.body[0] == BedrockType.ONLINE_PING:
+                onlinePing = OnlinePing(packet.body)
+                onlinePing.decode()
+                onlinePong = OnlinePong()
+                onlinePong.client_timestamp = onlinePing.client_timestamp
+                onlinePong.server_timestamp = int(time())
+                onlinePong.encode()
+
                 new_frame: Frame = Frame()
                 new_frame.reliability = 0
-                new_frame.body = online_ping_handler.handle(packet.body, self.address, self.server)
+                new_frame.body = onlinePong.data
                 self.add_to_queue(new_frame, False)
             elif packet.body[0] == BedrockType.DISCONNECT:
                 self.disconnect()
             else:
-                if hasattr(self.server, "interface"):
-                    if hasattr(self.server.interface, "on_frame"):
-                        self.server.interface.on_frame(packet, self)
+                self.serverSocket.receiveGamePacket(packet, self)
 
     def disconnect(self):
         self.serverSocket.getClientManager().removeClient(self.address)
@@ -141,6 +162,7 @@ class Client:
             self.queue.sequence_number = self.server_sequence_number
             self.server_sequence_number += 1
             self.recovery_queue[self.queue.sequence_number]: object = self.queue
+            print(self.queue)
             self.queue.encode()
             self.sendPacket(self.queue)
             self.queue: FrameSet = FrameSet()
