@@ -5,6 +5,8 @@ from threading import Thread
 from minepy.src import Server
 from minepy.src.client.ClientManager import ClientManager
 from minepy.src.packets.BedrockProtocolInfo import BedrockType
+from minepy.src.packets.Frame import Frame
+from minepy.src.packets.GamePacket import GamePacket
 from minepy.src.packets.Packet import Packet
 from minepy.src.packets.UnconnectedPing import UnconnectedPing
 from minepy.src.packets.UnconnectedPong import UnconnectedPong
@@ -49,7 +51,8 @@ class ServerSocket(Thread):
 
     def sendPacketTo(self, packet: Packet, address):
         if self.server.isDev():
-            self.server.getServerLogger().debug("packet sent: " + str(packet.data[1:]))
+            pass
+            #self.server.getServerLogger().debug("packet sent: " + str(packet.data[1:]))
         self.socket.sendto(packet.data, address)
 
     def start(self) -> None:
@@ -65,14 +68,27 @@ class ServerSocket(Thread):
             data, clientAddress = self.socket.recvfrom(65535)
             self.onRun(data, clientAddress)
 
-    def receiveGamePacket(self, packet, client):
-        print("RECEIVE GAME PACKET !")
+    def onFrameReceive(self, packet: Frame, client):
+        print("RECEIVE FRAME !")
+        print(packet)
+        packetId = packet.body[0]
+        self.server.getServerLogger().debug("Frame Packet ID: " + str(packetId))
+        if packetId == 0xfe:
+            print("Game Packet???????")
+            new_packet = GamePacket(packet.body)
+            new_packet.decode()
+            packets: list = new_packet.read_packets_data()
+            for batch in packets:
+                batchPacket = Packet
+                batchPacket.data = batch
+                self.getClientManager().getClient(client).receivePacket(batch)
 
     def onRun(self, data, clientAddress):
         packetId = data[0]
 
         if self.server.isDev():
-            self.server.getServerLogger().debug("packet receive: " + str(data))
+            pass
+            #self.server.getServerLogger().debug("packet receive: " + str(data[1:]))
 
         if not self.getClientManager().getClient(clientAddress) is None:
             client = self.getClientManager().getClient(clientAddress)
@@ -82,7 +98,6 @@ class ServerSocket(Thread):
             packet.decode()
             pongPacket = UnconnectedPong()
             pongPacket.client_timestamp = packet.client_timestamp
-            print("PING TIMESTAMP" + str(packet.client_timestamp))
             pongPacket.serverData = self.server.getServerDataForPonPacket()
             pongPacket.serverGUID = self.server.SERVER_UUID
             pongPacket.magic = packet.magic

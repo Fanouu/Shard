@@ -20,9 +20,11 @@ class Buffer:
     def __init__(self, data=b'', offset=0):
         self.data = data
         self.offset = offset
+    def feos(self):
+        return bool(len(self.data) <= self.offset)
 
     def get(self, pos):
-        if not len(self.data) <= self.offset:
+        if not self.feos():
             self.offset += pos
             return self.data[self.offset - pos:self.offset]
         else:
@@ -31,6 +33,29 @@ class Buffer:
 
     def getRemaining(self):
         return self.get(len(self.data) - self.offset)
+
+    def readVarInt(self) -> int:
+        value: int = 0
+        for i in range(0, 35, 7):
+            if self.feos():
+                raise Exception("Data position exceeded")
+            number: int = self.readUnsignedbyte()
+            value |= ((number & 0x7f) << i)
+            if (number & 0x80) == 0:
+                return value
+        raise Exception("VarInt is too big")
+
+    def putVarInt(self, value: int) -> None:
+        data: bytes = b""
+        value &= 0xffffffff
+        for i in range(0, 5):
+            to_write: int = value & 0x7f
+            value >>= 7
+            if value != 0:
+                self.putUnsignedByte(to_write | 0x80)
+            else:
+                self.putUnsignedByte(to_write)
+                break
 
     def add(self, value):
         if not isinstance(value, bytes):

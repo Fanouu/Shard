@@ -81,7 +81,6 @@ class Client:
     def handle_frame_set(self, data: bytes) -> None:
         packet: FrameSet = FrameSet(data)
         packet.decode()
-        print("FrameSET BODY: " + str(packet.data))
         if packet.sequence_number not in self.client_sequence_numbers:
             if packet.sequence_number in self.nack_queue:
                 self.nack_queue.remove(packet.sequence_number)
@@ -178,8 +177,14 @@ class Client:
                 self.add_to_queue(new_frame, False)
             elif packetId == BedrockType.DISCONNECT:
                 self.disconnect()
+                print("DISCONNECTION ?")
             else:
-                self.serverSocket.receiveGamePacket(packet, self)
+                self.serverSocket.onFrameReceive(packet, self)
+    def receivePacket(self, packet: Packet):
+        data = packet.data
+        packetId = data[0]
+        self.server.getServerLogger().debug("Client receive packet")
+        self.server.getServerLogger().debug("Packet ID: " + str(packetId))
 
     def disconnect(self):
         self.serverSocket.getClientManager().removeClient(self.address)
