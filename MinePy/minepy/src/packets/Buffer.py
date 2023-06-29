@@ -121,6 +121,12 @@ class Buffer:
     def putUnsignedlong(self, value):
         self.add(struct.pack('>Q', value))
 
+    def putUnsignedTriad_le(self, value: int):
+        self.add(struct.pack("<I", value)[:3])
+
+    def readUnsignedTriad_le(self):
+        return struct.unpack("<I", self.get(3) + b"\x00")[0]
+
     def read_address(self):
         ipv = self.readByte()
         if ipv == 4:

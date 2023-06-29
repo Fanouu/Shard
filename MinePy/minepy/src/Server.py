@@ -1,5 +1,6 @@
 import random
 import socketserver
+import sys
 import uuid
 from threading import Thread
 
@@ -25,6 +26,8 @@ class server:
     port = None
 
     dev = False
+
+    socketServer: ServerSocket = None
 
     def getPlayerManager(self) -> PlayerManager:
         return self.playerManager
@@ -62,9 +65,9 @@ class server:
         self.port = self.getServerConfigManager().getServerPort()
 
         self.getServerLogger().notice("Creating Server Socket..")
-        socketServer = ServerSocket.ServerSocket(self, self.ip, self.port)
+        self.socketServer = ServerSocket.ServerSocket(self, self.ip, self.port)
         self.getServerLogger().notice("Connecting Server Socket...")
-        socketServer.start()
+        self.socketServer.start()
         self.getServerLogger().info(f"Server Socket listening on: {Fore.RED}{self.ip}:{self.port} {Style.RESET_ALL}")
 
     def getServerDataForPonPacket(self):
@@ -82,3 +85,8 @@ class server:
             str(self.port),
             str(self.getServerConfigManager().getServerPortV6())
         ])
+
+    def stop(self):
+        if self.socketServer.isAlive():
+            self.socketServer.stop()
+        sys.exit()

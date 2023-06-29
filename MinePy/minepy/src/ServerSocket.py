@@ -2,6 +2,7 @@ import socket
 from threading import Thread
 
 from minepy.src import Server
+from minepy.src.client.ClientManager import ClientManager
 from minepy.src.packets.BedrockProtocolInfo import BedrockType
 from minepy.src.packets.Packet import Packet
 from minepy.src.packets.UnconnectedPing import UnconnectedPing
@@ -21,14 +22,22 @@ class ServerSocket(Thread):
 
     server = None
 
-    clients = []
+    running = False
+
+    clientManager = None
 
     def __init__(self, server, ip, port):
         super().__init__()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.SOL_UDP)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.ip = ip
         self.port = int(port)
         self.server = server
+        self.clientManager = ClientManager(self.server)
+
+    def getClientManager(self) -> ClientManager:
+        return self.clientManager
 
     def sendPacketTo(self, packet: Packet, address):
         packet.encode()
@@ -36,9 +45,16 @@ class ServerSocket(Thread):
             self.server.getServerLogger().debug("packet sent: " + str(packet.data[1:]))
         self.socket.sendto(packet.data, address)
 
+    def start(self) -> None:
+        super().start()
+        self.running = True
+
+    def stop(self):
+        self.running = False
+
     def run(self) -> None:
         self.socket.bind((self.ip, self.port))
-        while True:
+        while self.running:
             data, clientAddress = self.socket.recvfrom(65535)
             self.onRun(data, clientAddress)
 
@@ -48,6 +64,9 @@ class ServerSocket(Thread):
         if self.server.isDev():
             self.server.getServerLogger().debug("packet receive: " + str(data))
 
+        if not self.getClientManager().getClient(clientAddress) is None:
+            client = self.getClientManager().getClient(clientAddress)
+            client.onRun(data)
         if packetId == BedrockType.UNCONNECTED_PING:
             packet = UnconnectedPing(data)
             packet.decode()
@@ -88,3 +107,4 @@ class ServerSocket(Thread):
             replyPacket.mtu = packet.mtu
 
             self.sendPacketTo(replyPacket, clientAddress)
+            self.getClientManager().addClient(clientAddress)
