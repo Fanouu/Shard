@@ -14,7 +14,7 @@ class ClientManager:
     def __init__(self, Server: server):
         self.server = Server
 
-    def getClients(self):
+    def getClients(self) -> dict[Client]:
         return self.clients
 
     def getClient(self, address: tuple) -> Client | None:

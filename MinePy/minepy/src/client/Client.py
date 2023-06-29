@@ -22,6 +22,7 @@ class Client:
 
     def __init__(self, server, address, mtu_size):
         self.address = address
+        self.serverSocket = server.socketServer
         self.mtu_size: int = mtu_size
         self.server = server
         self.connected: bool = False
@@ -39,19 +40,23 @@ class Client:
         self.channel_index: list = [0] * 32
         self.last_receive_time: float = time()
 
+    def update(self):
+        if (time() - self.last_receive_time) >= 10:
+            self.disconnect()
+        self.send_ack_queue()
+        self.send_nack_queue()
+        self.send_queue()
+
     def sendPacket(self, packet: Packet):
         self.server.getServerLogger().debug("Packet ID: " + str(packet.packet_id))
         self.server.socketServer.sendPacketTo(packet, self.address)
 
     def onRun(self, data):
         if data[0] == BedrockType.ACK:
-            print("ACK")
             self.handle_ack(data)
         elif data[0] == BedrockType.NACK:
-            print("NACK")
             self.handle_ack(data)
         elif BedrockType.frame_set_0 <= data[0] <= BedrockType.frame_set_f:
-            print("Frame Set")
             self.handle_frame_set(data)
 
     def handle_ack(self, data: bytes) -> None:
@@ -115,29 +120,36 @@ class Client:
             self.handle_fragmented_frame(packet)
         else:
             packetId = packet.body[0]
-            self.server.getServerLogger().debug("PACKED ID:" + str(packetId))
-            self.server.getServerLogger().debug("PACKET BODY: " + str(packet.body))
             if not self.connected:
                 if packetId == ServerAcceptConnectionRequest.packet_id:
-                    print("SAME ID")
-                    sPacket = ServerAcceptConnectionRequest(packet.body)
-                    sPacket.decode()
-                    print(sPacket)
+                    connectionRequestAccepted = ServerAcceptConnectionRequest(packet.body)
+                    connectionRequestAccepted.decode()
+                    clientIncoming = ClientIncomingConnection()
+                    clientIncoming.server_address = self.serverSocket.getAddress()
+                    clientIncoming.system_addresses = connectionRequestAccepted.system_addresses
+                    clientIncoming.request_timestamp = connectionRequestAccepted.pong
+                    clientIncoming.accepted_timestamp = self.serverSocket.getTime()
+                    clientIncoming.encode()
+
+                    new_frame: Frame = Frame()
+                    new_frame.reliability = 0
+                    new_frame.body = clientIncoming.data
+                    self.add_to_queue(new_frame)
+                    self.connected = True
                 if packetId == BedrockType.CONNECTION_REQUEST:
-                    self.server.getServerLogger().debug("CONNECTION REQUEST")
                     connectionRequest = ClientRequestConnection(packet.body)
                     connectionRequest.decode()
 
                     serverAcceptRequest = ServerAcceptConnectionRequest()
                     serverAcceptRequest.client_address = self.address
                     serverAcceptRequest.system_index = 0
-                    serverAcceptRequest.server_guid = self.server.SERVER_UUID
-                    serverAcceptRequest.system_addresses = [("255.255.255.255", 19132, 4)] * 10
-                    serverAcceptRequest.request_timestamp = connectionRequest.request_timestamp
-                    serverAcceptRequest.accepted_timestamp = int(time())
-                    self.server.getServerLogger().debug("Encoding Server AcceptConnectionRequest")
+                    system_addresses = [("127.0.0.1", 0, 4)]
+                    for i in range(0, 20):
+                        system_addresses.append(("0.0.0.0", 0, 4))
+                    serverAcceptRequest.system_addresses = system_addresses
+                    serverAcceptRequest.ping = connectionRequest.ping
+                    serverAcceptRequest.pong = self.serverSocket.getTime()
                     serverAcceptRequest.encode()
-                    self.server.getServerLogger().debug("SERVER ACCEPT BODY: " + str(serverAcceptRequest.data))
 
                     new_frame: Frame = Frame()
                     new_frame.reliability = 0
@@ -150,13 +162,9 @@ class Client:
                     print(int(packet_1.server_address[1]))
                     print(int(self.server.getPort()))
                     if int(packet_1.server_address[1]) == int(self.server.getPort()):
-                        print("OK")
                         self.connected: bool = True
-                        if hasattr(self.server, "interface"):
-                            if hasattr(self.server.interface, "on_new_incoming_connection"):
-                                self.server.interface.on_new_incoming_connection(self)
+                        # TODO: add attribute to player
             elif packetId == BedrockType.ONLINE_PING:
-                print("ONLINE PING")
                 onlinePing = OnlinePing(packet.body)
                 onlinePing.decode()
                 onlinePong = OnlinePong()
@@ -169,10 +177,8 @@ class Client:
                 new_frame.body = onlinePong.data
                 self.add_to_queue(new_frame, False)
             elif packetId == BedrockType.DISCONNECT:
-                print("DISCONNECTION !")
                 self.disconnect()
             else:
-                print("GAME PACKET")
                 self.serverSocket.receiveGamePacket(packet, self)
 
     def disconnect(self):
@@ -188,8 +194,6 @@ class Client:
             self.queue: FrameSet = FrameSet()
 
     def add_to_queue(self, packet: Frame, is_imediate: bool = True) -> None:
-        print(packet)
-        print("ADD TO QUEUE FRAME")
         if ReliabilityTool.reliable(packet.reliability):
             packet.reliable_frame_index = self.server_reliable_frame_index
             self.server_reliable_frame_index += 1
@@ -202,7 +206,7 @@ class Client:
                 fragmented_body.append(packet.body[i:i + self.mtu_size])
             for index, body in enumerate(fragmented_body):
                 new_packet: Frame = Frame()
-                new_packet.fragmented= True
+                new_packet.fragmented = True
                 new_packet.reliability = packet.reliability
                 new_packet.compound_id = self.compound_id
                 new_packet.compound_size = len(fragmented_body)

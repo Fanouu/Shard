@@ -1,4 +1,5 @@
 import socket
+import time
 from threading import Thread
 
 from minepy.src import Server
@@ -23,6 +24,7 @@ class ServerSocket(Thread):
     server = None
 
     running = False
+    startTimeMs = None
 
     clientManager = None
 
@@ -35,14 +37,19 @@ class ServerSocket(Thread):
         self.port = int(port)
         self.server = server
         self.clientManager = ClientManager(self.server)
+        self.startTimeMs = int((time.time() * 1000))
+
+    def getAddress(self):
+        return self.ip, self.port, 4
+    def getTime(self):
+        return int((time.time() * 1000) - self.startTimeMs)
 
     def getClientManager(self) -> ClientManager:
         return self.clientManager
 
     def sendPacketTo(self, packet: Packet, address):
         if self.server.isDev():
-            pass
-            #self.server.getServerLogger().debug("packet sent: " + str(packet.data[1:]))
+            self.server.getServerLogger().debug("packet sent: " + str(packet.data[1:]))
         self.socket.sendto(packet.data, address)
 
     def start(self) -> None:
@@ -65,8 +72,7 @@ class ServerSocket(Thread):
         packetId = data[0]
 
         if self.server.isDev():
-            pass
-            #self.server.getServerLogger().debug("packet receive: " + str(data))
+            self.server.getServerLogger().debug("packet receive: " + str(data))
 
         if not self.getClientManager().getClient(clientAddress) is None:
             client = self.getClientManager().getClient(clientAddress)
@@ -76,6 +82,7 @@ class ServerSocket(Thread):
             packet.decode()
             pongPacket = UnconnectedPong()
             pongPacket.client_timestamp = packet.client_timestamp
+            print("PING TIMESTAMP" + str(packet.client_timestamp))
             pongPacket.serverData = self.server.getServerDataForPonPacket()
             pongPacket.serverGUID = self.server.SERVER_UUID
             pongPacket.magic = packet.magic
@@ -118,3 +125,8 @@ class ServerSocket(Thread):
 
             self.sendPacketTo(replyPacket, clientAddress)
             self.getClientManager().addClient(clientAddress, packet.mtu)
+
+        clients = self.getClientManager().getClients()
+        for client in clients:
+            client = self.getClientManager().getClientByAddressStr(client)
+            client.update()
