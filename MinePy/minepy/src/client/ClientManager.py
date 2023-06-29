@@ -37,6 +37,7 @@ class ClientManager:
         self.clients[addressSTR] = Client(self.server, address, mtu_size)
 
     def removeClient(self, address: tuple):
+        print("Remove Client")
         addressSTR = ":".join(self.toSTR(address))
         if self.getClient(address) is None:
             raise ClientException(Color.colorLogger("§cNo Client with this address: " + addressSTR + " registered !"))
